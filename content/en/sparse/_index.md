@@ -1,0 +1,94 @@
+---
+title: "sparse"
+weight: 10
+description: "Sparse matrices, fill-reducing orderings and iterative solvers, released v0.1.0."
+---
+
+<!-- Summary of go-sparse/sparse v0.1.0, README.md and docs/perf.md. Change the library's text first. -->
+
+**Status: released v0.1.0.**
+
+Sparse matrices, fill-reducing orderings and iterative solvers in pure Go
+(`CGO_ENABLED=0`), module `github.com/go-sparse/sparse`, BSD-3-Clause.
+
+```sh
+go get github.com/go-sparse/sparse@v0.1.0
+```
+
+```go
+a := gallery.Laplacian2D(100, 100)           // *sparse.CSR[float64]
+b := make([]float64, a.Rows)
+ic, _ := iter.NewIC0(a)                      // incomplete Cholesky
+res, _ := iter.CG(a, b, &iter.Options{RTol: 1e-8, M: ic})
+fmt.Println(res.Info, res.Iterations)        // 0 = converged, as in SciPy
+```
+
+## What is provided
+
+| package | provides |
+| --- | --- |
+| `sparse` | `COO`, `CSR`, `CSC`, `DOK` over `float64` and `complex128`; conversions; O(1) transpose; SpMV, SpMM, SpGEMM; `Add`, `Sub`, `Axpby`; scaling; `Diagonal`, `Tril`, `Triu`, `Permute`, `Prune`, norms; `Eye`, `Diags`; `LinearOperator` |
+| `nd` | `*ndarray.Array` in and out: vectors, dense matrices, SpMV and SpMM |
+| `mtx` | Matrix Market read and write: coordinate and array, real, integer, pattern and complex, general, symmetric, skew-symmetric and hermitian, gzip input |
+| `order` | `RCM`, `AMD`, `COLAMD`; `Bandwidth`, `Profile`, `CholeskyNNZ`, `QRFillNNZ` |
+| `iter` | `CG`, `GMRES(m)`, `BiCGSTAB`, `MINRES`, `LSQR`, `LSMR`; preconditioners `Jacobi`, `SSOR`, `IC0`, `ILU0`, `ILUT` |
+| `gallery` | Laplacians (1-D, 2-D, 3-D), convection-diffusion, seeded random sparse matrices |
+
+Solvers follow `scipy.sparse.linalg`: the stopping rule is
+`‖b − A x‖ ≤ max(rtol·‖b‖, atol)`, `rtol` defaults to 1e-5, `maxiter` to 10n
+(5n for MINRES), and `info` is 0 on success, the iteration limit when it was
+reached, and negative on breakdown.
+
+Not provided yet: sparse direct factorisations (LU, Cholesky, QR), nested
+dissection, eigensolvers, algebraic multigrid, Rutherford-Boeing I/O.
+
+## Orderings: provenance
+
+`AMD` and `COLAMD` are written from the papers (Amestoy, Davis and Duff, 1996;
+Davis, Gilbert, Larimore and Ng, 2004). SuiteSparse AMD and COLAMD are the
+reference algorithms; CHOLMOD, UMFPACK and CSparse (GPL/LGPL) were not
+consulted. Tie-breaking differs, so permutations differ; quality is compared
+by fill.
+
+## Verification
+
+Every solver, LSQR and LSMR and the orderings are compared with SciPy 1.18.1
+and NumPy 2.5.4 (and SuiteSparse AMD through cvxopt as a binary oracle). A Go
+harness drives SciPy over a pipe and records the answers in a committed
+fixture; the regression tests replay it, so they need neither Python nor
+network. The full method is the library's
+[docs/verification.md](https://github.com/go-sparse/sparse/blob/main/docs/verification.md).
+
+On the committed suite: CG, GMRES, MINRES, LSQR and LSMR iteration counts
+equal SciPy's; BiCGSTAB agrees within a few iterations. AMD Cholesky fill is
+within 1% of SuiteSparse AMD; COLAMD LU fill is within 4% of SuperLU's COLAMD;
+RCM bandwidth equals SciPy's.
+
+## Performance
+
+One core, Go 1.27.2 on darwin/arm64, SciPy 1.18.1, medians of 7 interleaved
+rounds. Ratio is Go time / SciPy time; below 1 means Go is faster. From the
+library's
+[docs/perf.md](https://github.com/go-sparse/sparse/blob/main/docs/perf.md),
+measured on 2026-10-20 at load 5.
+
+| work | SpMV | CG | GMRES(30) |
+| --- | ---: | ---: | ---: |
+| 2-D Laplacian, 1.1e5 nonzeros | 0.97 | 0.70 | 0.56 |
+| 2-D Laplacian, 1.0e6 nonzeros | 0.98 | 0.89 | 0.82 |
+
+Column indices are `int32`, as in `scipy.sparse`; dot products and vector
+updates use the fleet's SIMD kernels, and the Krylov solvers fuse each vector
+update with the dot product that follows it.
+
+## Untrusted input
+
+`mtx.ReadLimited` takes limits on dimensions, entries, line length,
+decompressed size and comment lines; declared sizes are checked before
+allocation, and a gzip bomb is cut off at the byte limit. `mtx.FuzzRead` has a
+committed corpus.
+
+## Quality gates
+
+`gofmt`, `go vet`, `go test -race` with 100% statement coverage over all
+packages, 386 and the other architectures in CI, and `govulncheck`.
