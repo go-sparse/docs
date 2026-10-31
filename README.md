@@ -10,7 +10,7 @@ A [Hugo](https://gohugo.io/) site with the [tannevaled/hextra](https://github.co
 fork of the [Hextra](https://github.com/imfing/hextra) theme, built the same way
 as the [go-numerics documentation](https://github.com/go-numerics/docs), with
 go-sparse's branding. It documents
-[`go-sparse/sparse`](https://github.com/go-sparse/sparse), released v0.1.0.
+[`go-sparse/sparse`](https://github.com/go-sparse/sparse), released v0.2.0.
 
 ## Versions
 
@@ -25,7 +25,7 @@ them**, or `main` while none is tagged:
 
 `https://go-sparse.github.io/docs/` redirects to `latest/`. Each push to
 `main` replaces the directory of the version it describes, and nothing else.
-The pages describe **sparse v0.1.0**, published under `0.1/`.
+The pages describe **sparse v0.2.0**, published under `0.2/`.
 
 ## Layout
 
@@ -47,10 +47,10 @@ The pages describe **sparse v0.1.0**, published under `0.1/`.
 git clone --recurse-submodules https://github.com/go-sparse/docs.git
 cd docs
 mkdir -p data && sh themes/hextra/scripts/page-history.sh > data/pagehistory.json
-hugo server --baseURL http://localhost:1313/docs/0.1/
+hugo server --baseURL http://localhost:1313/docs/0.2/
 ```
 
-then open <http://localhost:1313/docs/0.1/>. Hugo 0.146 or later.
+then open <http://localhost:1313/docs/0.2/>. Hugo 0.146 or later.
 
 ## Publication
 
