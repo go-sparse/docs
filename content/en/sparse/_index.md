@@ -1,18 +1,18 @@
 ---
 title: "sparse"
 weight: 10
-description: "Sparse matrices, fill-reducing orderings and iterative solvers, released v0.1.0."
+description: "Sparse matrices, fill-reducing orderings and iterative solvers, released v0.2.0."
 ---
 
-<!-- Summary of go-sparse/sparse v0.1.0, README.md and docs/perf.md. Change the library's text first. -->
+<!-- Summary of go-sparse/sparse v0.2.0, README.md and docs/perf.md. Change the library's text first. -->
 
-**Status: released v0.1.0.**
+**Status: released v0.2.0.**
 
 Sparse matrices, fill-reducing orderings and iterative solvers in pure Go
 (`CGO_ENABLED=0`), module `github.com/go-sparse/sparse`, BSD-3-Clause.
 
 ```sh
-go get github.com/go-sparse/sparse@v0.1.0
+go get github.com/go-sparse/sparse@v0.2.0
 ```
 
 ```go
@@ -31,6 +31,7 @@ fmt.Println(res.Info, res.Iterations)        // 0 = converged, as in SciPy
 | `nd` | `*ndarray.Array` in and out: vectors, dense matrices, SpMV and SpMM |
 | `mtx` | Matrix Market read and write: coordinate and array, real, integer, pattern and complex, general, symmetric, skew-symmetric and hermitian, gzip input |
 | `order` | `RCM`, `AMD`, `COLAMD`; `Bandwidth`, `Profile`, `CholeskyNNZ`, `QRFillNNZ` |
+| `ldl` | sparse LDLᵀ of quasi-definite symmetric matrices given as an upper-triangle CSC, a port of [QDLDL](https://github.com/osqp/qdldl) v0.1.9: `Analyze` (elimination tree, column counts), `Factor.Refactor` (numeric phase, redone with new values on the same pattern, without allocation; an exact zero or non-finite pivot is an error), `Solve`, `LSolve`, `LTSolve`, `DSolve`, `Permuted` (with a fill-reducing ordering such as `order.AMD`) |
 | `iter` | `CG`, `GMRES(m)`, `BiCGSTAB`, `MINRES`, `LSQR`, `LSMR`; preconditioners `Jacobi`, `SSOR`, `IC0`, `ILU0`, `ILUT` |
 | `gallery` | Laplacians (1-D, 2-D, 3-D), convection-diffusion, seeded random sparse matrices |
 
@@ -39,8 +40,25 @@ Solvers follow `scipy.sparse.linalg`: the stopping rule is
 (5n for MINRES), and `info` is 0 on success, the iteration limit when it was
 reached, and negative on breakdown.
 
-Not provided yet: sparse direct factorisations (LU, Cholesky, QR), nested
-dissection, eigensolvers, algebraic multigrid, Rutherford-Boeing I/O.
+Not provided yet: sparse LU, Cholesky and QR factorisations (`ldl` covers
+quasi-definite LDLᵀ only: no pivoting), nested dissection, eigensolvers,
+algebraic multigrid, Rutherford-Boeing I/O.
+
+`(*CSC).MulVecSymUpper(dst, x)` multiplies by a symmetric matrix stored as its
+upper triangle only, the layout OSQP uses for its cost matrix.
+
+## LDLᵀ: provenance, tests and speed
+
+`ldl` is a port of QDLDL v0.1.9 (Apache-2.0, attribution in the library's
+`NOTICE`), written from its source; Davis's LDL (LGPL) was not consulted. It is
+tested against QDLDL's own nine test cases, against a dense unpivoted LDLᵀ (the
+values and signs of D) and a dense LU solve from go-ndarray on random
+quasi-definite KKT matrices, and fuzzed: malformed or non-quasi-definite input
+returns an error and never panics.
+
+Against the C QDLDL (`-O3`) on one core, interleaved, at load 7.7 (Go time / C
+time): the solves are on par (0.98 to 1.03) and the numeric factorisation is 4
+to 10% slower (1.04 to 1.10), which is an open defect.
 
 ## Orderings: provenance
 

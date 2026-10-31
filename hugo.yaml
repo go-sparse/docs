@@ -89,7 +89,7 @@ params:
   # version among them is the documentation's version label (v0.1.2 -> 0.1):
   # the CI reads it here.
   libraries:
-    sparse: "v0.1.0"
+    sparse: "v0.2.0"
   versions:
     # The version selector shows "main" with the development icon.
     development: "main"
