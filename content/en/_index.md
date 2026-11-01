@@ -16,7 +16,7 @@ against recorded SciPy 1.18.1 answers.
 
 | Library | Version | What it does |
 | --- | --- | --- |
-| [sparse]({{< relref "sparse" >}}) | released v0.2.1 | COO, CSR, CSC and DOK matrices over float64 and complex128, Matrix Market I/O, RCM, AMD and COLAMD orderings, a QDLDL-based sparse LDLᵀ for quasi-definite matrices, CG, GMRES, BiCGSTAB, MINRES, LSQR and LSMR with preconditioners, a matrix gallery |
+| [sparse]({{< relref "sparse" >}}) | released v0.3.0 | COO, CSR, CSC and DOK matrices over float64 and complex128, Matrix Market I/O, RCM, AMD and COLAMD orderings, a QDLDL-based sparse LDLᵀ for quasi-definite matrices, CG, GMRES, BiCGSTAB, MINRES, LSQR and LSMR with preconditioners, a matrix gallery |
 
 ## Install
 

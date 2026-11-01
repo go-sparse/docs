@@ -30,8 +30,8 @@ fmt.Println(res.Info, res.Iterations)        // 0 = converged, as in SciPy
 | `sparse` | `COO`, `CSR`, `CSC`, `DOK` over `float64` and `complex128`; conversions; O(1) transpose; SpMV, SpMM, SpGEMM; `Add`, `Sub`, `Axpby`; scaling; `Diagonal`, `Tril`, `Triu`, `Permute`, `Prune`, norms; `Eye`, `Diags`; `LinearOperator` |
 | `nd` | `*ndarray.Array` in and out: vectors, dense matrices, SpMV and SpMM |
 | `mtx` | Matrix Market read and write: coordinate and array, real, integer, pattern and complex, general, symmetric, skew-symmetric and hermitian, gzip input |
-| `order` | `RCM`, `AMD`, `COLAMD`; `Bandwidth`, `Profile`, `CholeskyNNZ`, `QRFillNNZ` |
-| `ldl` | sparse LDLᵀ of quasi-definite symmetric matrices given as an upper-triangle CSC, a port of [QDLDL](https://github.com/osqp/qdldl) v0.1.9: `Analyze` (elimination tree, column counts), `Factor.Refactor` (numeric phase, redone with new values on the same pattern, without allocation; an exact zero or non-finite pivot is an error), `Solve`, `LSolve`, `LTSolve`, `DSolve`, `Permuted` (with a fill-reducing ordering such as `order.AMD`) |
+| `order` | `RCM`, `AMD`, `COLAMD`, and `AMDWith`/`COLAMDWith` on a reusable `Workspace` (no allocation once it is sized); `Bandwidth`, `Profile`, `CholeskyNNZ`, `QRFillNNZ` |
+| `ldl` | sparse LDLᵀ of quasi-definite symmetric matrices given as an upper-triangle CSC, a port of [QDLDL](https://github.com/osqp/qdldl) v0.1.9: `Analyze` (elimination tree, column counts), `Factor.Refactor` (numeric phase, redone with new values on the same pattern, without allocation; an exact zero or non-finite pivot is an error), `Solve`, `LSolve`, `LTSolve`, `DSolve`, `Permuted` (with a fill-reducing ordering such as `order.AMD`; `Reset` redoes the symbolic phase for the next problem on the same storage, without allocation) |
 | `iter` | `CG`, `GMRES(m)`, `BiCGSTAB`, `MINRES`, `LSQR`, `LSMR`; preconditioners `Jacobi`, `SSOR`, `IC0`, `ILU0`, `ILUT` |
 | `gallery` | Laplacians (1-D, 2-D, 3-D), convection-diffusion, seeded random sparse matrices |
 
@@ -77,6 +77,16 @@ split the row loop of the numeric phase in two (pattern, then elimination),
 which removed 3 to 6% of it; the rest is bounds checks on data-dependent
 indices and per-row overhead that C does not pay. The profile, the assembly
 comparison and what was not tried are in `docs/perf.md` of the repository.
+
+The table is v0.2.1's. v0.3.0 (issue #10) fused `Solve` into two sweeps (D
+inside the L sweep, the permutation inside the last sweep; 2 to 4% faster,
+bit-identical), tried an interleaved layout of L (index and value in one array
+of structs) and did not keep it because it was never faster, and made the
+symbolic side of a solver setup cheaper: AMD followed by `NewPermuted` on the
+same KKT grids takes about half the time of v0.2.1 with fresh storage (order 72:
+28.5 µs and 652 allocations, now 15.4 µs and 79) and, on a reused
+`order.Workspace` with `Permuted.Reset`, 9.8 µs and no allocation. The ratios
+against QDLDL are re-measured in `docs/perf.md` when the machine is quiet.
 
 ## Orderings: provenance
 
