@@ -56,9 +56,27 @@ values and signs of D) and a dense LU solve from go-ndarray on random
 quasi-definite KKT matrices, and fuzzed: malformed or non-quasi-definite input
 returns an error and never panics.
 
-Against the C QDLDL (`-O3`) on one core, interleaved, at load 7.7 (Go time / C
-time): the solves are on par (0.98 to 1.03) and the numeric factorisation is 4
-to 10% slower (1.04 to 1.10), which is an open defect.
+Against the C QDLDL (`-O3`) on one core, 9 interleaved rounds, measured on
+2026-11-01 at load 2.3 (Apple M4 Max; Go time / C time; KKT matrices of a grid
+Laplacian plus coupling constraints; for the AMD rows `order.AMD` is applied
+once and both sides factor the permuted pattern):
+
+| order, nnz(K), nnz(L) | ordering | numeric factor | solve |
+|---|---|---:|---:|
+| 72, 204, 1516 | natural | 1.06 | 0.96 |
+| 288, 840, 22474 | natural | 0.99 | 1.01 |
+| 800, 2360, 168018 | natural | 1.00 | 1.01 |
+| 800, 2360, 4885 | AMD | 1.21 | 1.13 |
+| 3200, 9520, 28309 | AMD | 1.13 | 0.96 |
+| 9800, 29260, 102299 | AMD | 1.11 | 1.10 |
+
+With long columns of L (natural order) Go is on par with C. With the short
+columns AMD produces (6 to 10 entries each) the numeric factorisation is 11 to
+21% slower and the solve up to 13% slower, which is an open defect. v0.2.1
+split the row loop of the numeric phase in two (pattern, then elimination),
+which removed 3 to 6% of it; the rest is bounds checks on data-dependent
+indices and per-row overhead that C does not pay. The profile, the assembly
+comparison and what was not tried are in `docs/perf.md` of the repository.
 
 ## Orderings: provenance
 
